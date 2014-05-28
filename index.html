@@ -41,8 +41,66 @@
         <h1>
 <a name="dnanexus-oauth2-demo" class="anchor" href="#dnanexus-oauth2-demo"><span class="octicon octicon-link"></span></a>DNAnexus OAuth2 demo</h1>
 
-        <a href="https://auth.dnanexus.com/oauth2/authorize?client_id=ak_test&redirect_uri=https://kislyuk.github.io/dnanexus-oauth2-demo/&response_type=code">Log in to DNAnexus</a>
+        <script type="text/javascript">
+            (function($) {
+                $.queryString = (function(a) {
+                    if (a == "") return {};
+                    var b = {};
+                    for (var i = 0; i < a.length; ++i)
+                    {
+                        var p=a[i].split('=');
+                        if (p.length != 2) continue;
+                        b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+                    }
+                    return b;
+                })(window.location.search.substr(1).split('&'))
+            })(jQuery);
 
+          var dx_api = "https://api.dnanexus.com";
+          var auth_api = "https://auth.dnanexus.com";
+          var auth_route = "/oauth2/authorize";
+          var client_id = "test";
+          var redirect_uri = "https://kislyuk.github.io/dnanexus-oauth2-demo";
+
+          //dx_api = "http://localhost:8124";
+          //auth_api = "http://localhost:8081";
+          //dx_api = "https://stagingapi.dnanexus.com";
+          //auth_api = "https://stagingauth.dnanexus.com";
+
+          document.write("<a href='" + auth_api + auth_route + "?client_id=" + client_id +
+                         "&redirect_uri=" + encodeURIComponent(redirect_uri) +
+                         "&response_type=code'>Log in to DNAnexus</a>");
+          
+          function DXHTTPRequest(route, data, auth_token, cb) {
+             $.ajax({url: dx_api + route,
+                     type: "POST",
+                     headers: {Authorization: "Bearer "+auth_token, "content-type": "application/json"},
+                     dataType: "json",
+                     data: JSON.stringify({}),
+                     success: function(data) {
+                       console.log("API request success:"); console.dir(data);
+                       cb(data);
+                     }});
+          }
+
+          if ($.queryString.code) {
+            document.write("<p>Received authentication code. Retrieving projects:</p>");
+            document.write("<table id='projectList'><tr><th>Project ID</th><th>Project name</th></tr></table>");
+            $.post(auth_api + "/oauth2/token?grant_type=authorization_code" +
+                   "&code=" + $.queryString.code +
+                   "&redirect_uri=" + encodeURIComponent(redirect_uri),
+                   function(data) {
+                     var token = data.access_token;
+                     DXHTTPRequest("/system/findProjects", {}, token, function(projList) {
+                       for (var i=0; i<projList.results.length; i++) {
+                         DXHTTPRequest("/" + projList.results[i].id + "/describe", {}, token, function(desc) {
+                           $('#projectList').append("<tr><td>"+desc.id+"</td><td>"+desc.name+"</td></tr>");
+                         });
+                       }
+                     });
+                   });
+          }
+        </script>
       </section>
 
     </div>
