@@ -71,12 +71,12 @@
                          "&redirect_uri=" + encodeURIComponent(redirect_uri) +
                          "&response_type=code'>Log in to DNAnexus</a>");
           
-          function DXHTTPRequest(route, data, auth_token, cb) {
+          function DXHTTPRequest(route, input, auth_token, cb) {
              $.ajax({url: dx_api + route,
                      type: "POST",
                      headers: {Authorization: "Bearer "+auth_token, "content-type": "application/json"},
                      dataType: "json",
-                     data: JSON.stringify({}),
+                     data: JSON.stringify(input),
                      success: function(data) {
                        console.log("API request success:"); console.dir(data);
                        cb(data);
